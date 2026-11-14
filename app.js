@@ -13,8 +13,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const audioStatus = document.getElementById("audio-status");
 
   let currentAudio = null;
+  let currentAudioUrl = null;
   let stopQueueFlag = false;
   let highlightTimer = null;
+  let playbackVersion = 0;
+  let activePlaybackKey = null;
 
   function getAudioErrorMessage() {
     return isGitHubPages
@@ -34,12 +37,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function stopAllAudio() {
+    playbackVersion++;
     stopQueueFlag = true;
-    if (currentAudio) {
-      currentAudio.pause();
-      currentAudio.currentTime = 0;
-      currentAudio = null;
+    activePlaybackKey = null;
+    const audioToStop = currentAudio;
+    const audioUrlToRevoke = currentAudioUrl;
+    currentAudio = null;
+    currentAudioUrl = null;
+    if (audioToStop) {
+      audioToStop.pause();
+      audioToStop.currentTime = 0;
     }
+    if (audioUrlToRevoke) URL.revokeObjectURL(audioUrlToRevoke);
     clearWordHighlights();
     setStatus("Voz Neuronal Lista");
   }
@@ -62,22 +71,30 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function speakText(text, wordSpans = null, customVoice = null) {
+    const playbackKey = `text:${JSON.stringify([text, customVoice || voiceSelect.value, rateSelect.value])}`;
+    if (activePlaybackKey === playbackKey) return;
+
     stopAllAudio();
+    const currentPlaybackVersion = playbackVersion;
+    activePlaybackKey = playbackKey;
     stopQueueFlag = false;
     setStatus("Generando voz...", true);
 
     try {
       const blob = await fetchAudioBlob(text, customVoice);
-      if (stopQueueFlag) return;
+      if (currentPlaybackVersion !== playbackVersion || stopQueueFlag) return;
 
       const audioUrl = URL.createObjectURL(blob);
-      currentAudio = new Audio(audioUrl);
+      const audio = new Audio(audioUrl);
+      currentAudio = audio;
+      currentAudioUrl = audioUrl;
 
-      currentAudio.onloadedmetadata = () => {
+      audio.onloadedmetadata = () => {
+        if (currentPlaybackVersion !== playbackVersion) return;
         setStatus("Reproduciendo 🔊");
         // Sincronización visual proporcional palabra por palabra
-        if (wordSpans && wordSpans.length > 0 && currentAudio.duration) {
-          const totalDurationMs = currentAudio.duration * 1000;
+        if (wordSpans && wordSpans.length > 0 && audio.duration) {
+          const totalDurationMs = audio.duration * 1000;
           const stepMs = totalDurationMs / wordSpans.length;
           let idx = 0;
 
@@ -96,15 +113,23 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       };
 
-      currentAudio.onended = () => {
+      audio.onended = () => {
+        URL.revokeObjectURL(audioUrl);
+        if (currentAudio === audio) {
+          currentAudio = null;
+          currentAudioUrl = null;
+        }
+        if (currentPlaybackVersion !== playbackVersion) return;
+        activePlaybackKey = null;
         clearWordHighlights();
         setStatus("Voz Neuronal Lista");
-        URL.revokeObjectURL(audioUrl);
       };
 
-      await currentAudio.play();
+      await audio.play();
     } catch (err) {
+      if (currentPlaybackVersion !== playbackVersion) return;
       console.error(err);
+      activePlaybackKey = null;
       setStatus("Error: servidor de audio no disponible", true);
       alert(`⚠️ ${getAudioErrorMessage()}`);
     }
@@ -112,36 +137,58 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Reproducir secuencia de frases o diálogos (alternando voces reales)
   async function playSequence(items) {
+    const playbackKey = `sequence:${JSON.stringify([rateSelect.value, items])}`;
+    if (activePlaybackKey === playbackKey) return;
+
     stopAllAudio();
+    const currentPlaybackVersion = playbackVersion;
+    activePlaybackKey = playbackKey;
     stopQueueFlag = false;
 
     for (let i = 0; i < items.length; i++) {
-      if (stopQueueFlag) break;
+      if (currentPlaybackVersion !== playbackVersion || stopQueueFlag) break;
       const item = items[i];
       setStatus(`Reproduciendo (${i + 1}/${items.length})...`, true);
 
       try {
         const blob = await fetchAudioBlob(item.text, item.voice || null);
-        if (stopQueueFlag) break;
+        if (currentPlaybackVersion !== playbackVersion || stopQueueFlag) break;
 
         const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+        currentAudio = audio;
+        currentAudioUrl = audioUrl;
         await new Promise((resolve) => {
-          currentAudio = new Audio(audioUrl);
-          currentAudio.onended = () => {
+          let settled = false;
+          const finish = () => {
+            if (settled) return;
+            settled = true;
             URL.revokeObjectURL(audioUrl);
+            if (currentAudio === audio) {
+              currentAudio = null;
+              currentAudioUrl = null;
+            }
             resolve();
           };
-          currentAudio.onerror = () => resolve();
-          currentAudio.play();
+          audio.onended = finish;
+          audio.onerror = finish;
+          audio.onpause = finish;
+          audio.play().catch((err) => {
+            console.error(err);
+            finish();
+          });
         });
       } catch (err) {
+        if (currentPlaybackVersion !== playbackVersion) return;
         console.error(err);
+        activePlaybackKey = null;
         setStatus("Error: servidor de audio no disponible", true);
-        break;
+        return;
       }
     }
 
-    if (!stopQueueFlag) {
+    if (currentPlaybackVersion === playbackVersion && !stopQueueFlag) {
+      activePlaybackKey = null;
       setStatus("Voz Neuronal Lista");
     }
   }
