@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>English Studio | Entorno de Inmersión</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img class="logo-image" src="logo-personal-software.png" alt="Personal Software PIL" />
+      <span class="logo">English Studio</span>
+      <span class="badge" id="audio-status">Voz Neuronal Lista</span>
+    </div>
+
+    <nav class="main-nav">
+      <button class="nav-btn active" data-tab="lecturas">📖 Lecturas Largas</button>
+      <button class="nav-btn" data-tab="gramatica">📐 Gramática & 12 Tiempos</button>
+      <button class="nav-btn" data-tab="fundamentos">🔤 Fundamentos & Diálogos</button>
+    </nav>
+
+    <div class="audio-controls">
+      <div class="control-group">
+        <label for="voice-select">Locutor:</label>
+        <select id="voice-select">
+          <option value="en-US-AriaNeural" selected>🇺🇸 Aria (Femenina - Natural)</option>
+          <option value="en-US-GuyNeural">🇺🇸 Guy (Masculina - Natural)</option>
+          <option value="en-US-JennyNeural">🇺🇸 Jenny (Femenina - Clara)</option>
+          <option value="en-US-ChristopherNeural">🇺🇸 Christopher (Masculina - Profunda)</option>
+          <option value="en-GB-SoniaNeural">🇬🇧 Sonia (Británica - Natural)</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="speech-rate">Ritmo:</label>
+        <select id="speech-rate">
+          <option value="-30%">0.7x (Pausado / Estudio)</option>
+          <option value="-15%">0.85x (Claro)</option>
+          <option value="+0%" selected>1.0x (Natural)</option>
+          <option value="+15%">1.15x (Fluido)</option>
+        </select>
+      </div>
+      <button id="stop-audio-btn" class="btn-stop" title="Detener audio">⏹ Detener</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- ==================== SECCIÓN 1: LECTURAS ==================== -->
+    <section id="tab-lecturas" class="tab-content active">
+      <div class="section-header">
+        <div>
+          <h1>Biblioteca de Lecturas Inmersivas</h1>
+          <p>Pasa el cursor sobre cualquier palabra para ver su significado. Haz clic para escucharla con voz humana.</p>
+        </div>
+        <div class="filters">
+          <select id="filter-category">
+            <option value="all">Todas las temáticas</option>
+            <option value="Neurología">🧠 Neurología Sistemática</option>
+            <option value="Montañas">🏔️ Montañas y Expediciones</option>
+            <option value="Cuentos">📚 Cuentos e Historias</option>
+            <option value="Cultura General">🌍 Cultura General</option>
+          </select>
+          <select id="filter-level">
+            <option value="all">Todos los niveles</option>
+            <option value="0">Nivel 0 (Básico Inicial)</option>
+            <option value="1">Nivel 1 (Básico Consolidado)</option>
+            <option value="2">Nivel 2 (Intermedio)</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="readings-grid" class="cards-grid"></div>
+
+      <!-- Vista de lectura extensa -->
+      <div id="reader-view" class="reader-box hidden">
+        <div class="reader-top-actions">
+          <button id="back-to-readings" class="btn-secondary">← Volver a la biblioteca</button>
+          <button id="read-full-story-btn" class="btn-audio-primary">🔊 Escuchar historia completa</button>
+        </div>
+        <div class="reader-meta">
+          <span id="reader-category" class="tag"></span>
+          <span id="reader-level" class="tag level"></span>
+        </div>
+        <h2 id="reader-title"></h2>
+        <div id="reader-paragraphs"></div>
+      </div>
+    </section>
+
+    <!-- ==================== SECCIÓN 2: GRAMÁTICA & EJERCICIOS ==================== -->
+    <section id="tab-gramatica" class="tab-content">
+      <div class="section-header">
+        <div>
+          <h1>Gramática Estructurada & Los 12 Tiempos</h1>
+          <p>Estudia la teoría paso a paso, escucha los ejemplos y resuelve los ejercicios interactivos.</p>
+        </div>
+        <div class="sub-nav">
+          <button class="sub-btn active" data-gram="tobe">Nivel 0: Verbo To Be</button>
+          <button class="sub-btn" data-gram="tenses">Los 12 Tiempos + Ejercicios</button>
+          <button class="sub-btn" data-gram="questions">Cómo Hacer Preguntas</button>
+        </div>
+      </div>
+
+      <div id="grammar-container"></div>
+    </section>
+
+    <!-- ==================== SECCIÓN 3: FUNDAMENTOS ==================== -->
+    <section id="tab-fundamentos" class="tab-content">
+      <div class="section-header">
+        <div>
+          <h1>Fundamentos, Vocabulario y Conversaciones</h1>
+          <p>Domina los sonidos base, números, profesiones, verbos clave y diálogos extensos.</p>
+        </div>
+        <div class="sub-nav">
+          <button class="sub-btn active" data-fund="vocales">Vocales y Sonidos</button>
+          <button class="sub-btn" data-fund="numeros">Números y Tiempo</button>
+          <button class="sub-btn" data-fund="profesiones">Profesiones</button>
+          <button class="sub-btn" data-fund="verbos">Verbos Esenciales</button>
+          <button class="sub-btn" data-fund="dialogos">💬 Conversaciones Largas</button>
+        </div>
+      </div>
+
+      <div id="fundamentals-container"></div>
+    </section>
+  </main>
+
+  <div id="word-tooltip" class="tooltip hidden"></div>
+
+  <script src="data/lecturas.js"></script>
+  <script src="data/gramatica.js"></script>
+  <script src="data/fundamentos.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
