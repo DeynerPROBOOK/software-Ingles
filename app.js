@@ -1,6 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
   // ==================== MOTOR DE AUDIO NEURONAL (FASTAPI + EDGE-TTS) ====================
-  const API_URL = "http://127.0.0.1:8000/api/tts";
+  const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+  const isGitHubPages = window.location.hostname.endsWith(".github.io");
+  const API_URL = isLocalHost
+    ? "http://127.0.0.1:8000/api/tts"
+    : isGitHubPages
+      ? "https://english-studio-neural-audio.onrender.com/api/tts"
+      : `${window.location.origin}/api/tts`;
   const voiceSelect = document.getElementById("voice-select");
   const rateSelect = document.getElementById("speech-rate");
   const stopAudioBtn = document.getElementById("stop-audio-btn");
@@ -9,6 +15,12 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentAudio = null;
   let stopQueueFlag = false;
   let highlightTimer = null;
+
+  function getAudioErrorMessage() {
+    return isGitHubPages
+      ? "No se pudo conectar con el servidor de audio en Render. Si acabas de desplegarlo, espera a que esté listo y vuelve a intentarlo."
+      : "No se pudo conectar con el servidor de audio. En local, inicia server.py y vuelve a intentarlo.";
+  }
 
   function setStatus(text, isLoading = false) {
     audioStatus.textContent = text;
@@ -93,8 +105,8 @@ document.addEventListener("DOMContentLoaded", () => {
       await currentAudio.play();
     } catch (err) {
       console.error(err);
-      setStatus("Error: Inicia server.py", true);
-      alert("⚠️ Asegúrate de tener encendido el backend en tu terminal con:\nuvicorn server:app --reload");
+      setStatus("Error: servidor de audio no disponible", true);
+      alert(`⚠️ ${getAudioErrorMessage()}`);
     }
   }
 
@@ -123,7 +135,8 @@ document.addEventListener("DOMContentLoaded", () => {
           currentAudio.play();
         });
       } catch (err) {
-        setStatus("Error: Inicia server.py", true);
+        console.error(err);
+        setStatus("Error: servidor de audio no disponible", true);
         break;
       }
     }
